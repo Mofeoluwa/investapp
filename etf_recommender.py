@@ -66,18 +66,20 @@ def recommend_etfs(risk, horizon, goal):
     ]
 
     # Filter ETFs based on risk and investment goal
-    filtered = [etf for etf in etf_data if etf["risk"] == risk and etf["goal"] == goal]
+    # Retrieve ETFs based on risk and goal
+    filtered = etf_data.get(risk, {}).get(goal, [])
 
-    # If no ETF matches both criteria, relax the goal filter and try only risk.
+    # Fallback to risk-only filter if no matches
     if not filtered:
-        filtered = [etf for etf in etf_data if etf["risk"] == risk]
+        filtered = [etf for etfs in etf_data.get(risk, {}).values() for etf in etfs]
 
-    # Optionally, add a simple horizon adjustment:
-    # For very short investment horizons, warn if risk is not low.
+    # Add warning for short-term high-risk investments
     if horizon < 3 and risk != "low":
-        # Instead of printing, we'll add a warning in the results.
-        warning = "[Warning] With an investment horizon of less than 3 years, it is generally advisable to consider lower risk investments."
-        filtered.insert(0, {"name": "Attention", "ticker": "", "risk": risk, "goal": goal, "description": warning})
+        warning = {
+            "name": "Attention",
+            "ticker": "",
+            "description": "[Warning] For investment horizons under 3 years, lower-risk investments are generally advisable."
+        }
+        filtered.insert(0, warning)
 
-    # Limit the recommendations to the top 3 options (or fewer if not enough ETFs match)
     return filtered[:3]
